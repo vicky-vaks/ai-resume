@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Resume Ranker - Neural Analysis</title>
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --dark-bg: #0a0a0a;
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --glow-color: #00f2fe;
+    --success-color: #00ff88;
+    --warning-color: #ffaa00;
+    --danger-color: #ff4757;
+}
+
+/* ===== Reset & Body ===== */
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background: var(--dark-bg);
+    position:relative;
+    overflow-x:hidden;
+}
+
+/* ===== Background & Particles ===== */
+.neural-background {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    z-index:-2;
+    background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3), transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3), transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2), transparent 50%);
+}
+
+.grid-overlay {
+    position: fixed; top:0; left:0;
+    width:100%; height:100%;
+    background-image: linear-gradient(rgba(0,242,254,0.1) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,242,254,0.1) 1px, transparent 1px);
+    background-size:50px 50px;
+    animation:gridMove 20s linear infinite;
+    z-index:-1;
+}
+
+@keyframes gridMove {
+    0% {transform:translate(0,0);}
+    100% {transform:translate(50px,50px);}
+}
+
+/* Floating particles */
+.particle {
+    position:absolute; width:4px; height:4px;
+    background: var(--glow-color);
+    border-radius:50%;
+    box-shadow:0 0 10px var(--glow-color);
+    animation: float 8s ease-in-out infinite;
+}
+.particle:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 6s; }
+.particle:nth-child(2) { left: 20%; animation-delay: 1s; animation-duration: 8s; }
+.particle:nth-child(3) { left: 30%; animation-delay: 2s; animation-duration: 7s; }
+.particle:nth-child(4) { left: 40%; animation-delay: 3s; animation-duration: 9s; }
+.particle:nth-child(5) { left: 50%; animation-delay: 4s; animation-duration: 6s; }
+.particle:nth-child(6) { left: 60%; animation-delay: 5s; animation-duration: 8s; }
+.particle:nth-child(7) { left: 70%; animation-delay: 6s; animation-duration: 7s; }
+.particle:nth-child(8) { left: 80%; animation-delay: 7s; animation-duration: 9s; }
+.particle:nth-child(9) { left: 90%; animation-delay: 8s; animation-duration: 6s; }
+
+@keyframes float {
+    0%,100% {transform:translateY(100vh) scale(0); opacity:0;}
+    10% {opacity:1;}
+    90% {opacity:1;}
+    100% {transform:translateY(-100px) scale(1);}
+}
+
+/* ===== Container ===== */
+.container {
+    position:relative;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border:1px solid rgba(255,255,255,0.1);
+    padding:50px;
+    border-radius:25px;
+    box-shadow:0 25px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    width:100%; max-width:600px;
+    text-align:center;
+    z-index:10;
+    animation: containerGlow 3s ease-in-out infinite alternate;
+}
+@keyframes containerGlow {
+    0% { box-shadow:0 25px 50px rgba(0,0,0,0.5),0 0 0 rgba(0,242,254,0); }
+    100% { box-shadow:0 25px 50px rgba(0,0,0,0.5),0 0 30px rgba(0,242,254,0.3); }
+}
+
+/* Header */
+.header { margin-bottom:40px; }
+.title { font-size:2.5rem; font-weight:700; background:var(--accent-gradient); background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:10px; text-shadow:0 0 30px rgba(0,242,254,0.5);}
+.subtitle { color: var(--text-secondary); font-size:1.1rem; font-weight:300;}
+
+/* Neural nodes */
+.neural-icon { width:60px; height:60px; margin:0 auto 20px; position:relative;}
+.neural-node { position:absolute; width:8px; height:8px; background:var(--glow-color); border-radius:50%; box-shadow:0 0 15px var(--glow-color); animation:pulse 2s ease-in-out infinite;}
+.neural-node:nth-child(1) { top:0; left:26px; animation-delay:0s; }
+.neural-node:nth-child(2) { top:20px; left:0; animation-delay:0.3s; }
+.neural-node:nth-child(3) { top:20px; right:0; animation-delay:0.6s; }
+.neural-node:nth-child(4) { bottom:20px; left:0; animation-delay:0.9s; }
+.neural-node:nth-child(5) { bottom:20px; right:0; animation-delay:1.2s; }
+.neural-node:nth-child(6) { bottom:0; left:26px; animation-delay:1.5s; }
+@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.5);opacity:1;} }
+
+/* Form */
+.form-container { display:flex; flex-direction:column; gap:25px;}
+.file-input-wrapper { position:relative; overflow:hidden; display:inline-block; width:100%; }
+.file-input { position:absolute; left:-9999px; }
+.file-input-label { display:block; padding:20px; border:2px dashed rgba(0,242,254,0.5); border-radius:15px; background: rgba(0,242,254,0.05); color:var(--text-primary); cursor:pointer; transition:all 0.3s; font-size:1.1rem; text-align:center;}
+.file-input-label:hover { border-color: var(--glow-color); background: rgba(0,242,254,0.1); box-shadow:0 0 20px rgba(0,242,254,0.3);}
+.skills-textarea { width:100%; padding:20px; border-radius:15px; background:rgba(255,255,255,0.05); color:var(--text-primary); font-size:1rem; resize:vertical; min-height:120px; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.2); transition:all 0.3s;}
+.skills-textarea:focus { outline:none; border-color:var(--glow-color); box-shadow:0 0 20px rgba(0,242,254,0.3);}
+.skills-textarea::placeholder { color:var(--text-secondary);}
+.analyze-btn { background:var(--accent-gradient); color:var(--text-primary); padding:18px 40px; border:none; border-radius:50px; cursor:pointer; font-size:1.1rem; font-weight:600; text-transform:uppercase; letter-spacing:1px; transition:all 0.3s; position:relative; overflow:hidden; box-shadow:0 10px 30px rgba(0,242,254,0.3);}
+.analyze-btn:hover { transform:translateY(-3px); box-shadow:0 15px 40px rgba(0,242,254,0.5);}
+.analyze-btn:active { transform:translateY(-1px);}
+.analyze-btn::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent); transition:left 0.5s;}
+.analyze-btn:hover::before { left:100%;}
+
+/* Loading & Score */
+.loading { display:none; margin-top:20px; text-align:center;}
+.loading-spinner { width:40px; height:40px; border:3px solid rgba(0,242,254,0.3); border-top:3px solid var(--glow-color); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto;}
+@keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+.score-container { margin-top:30px; padding:25px; border-radius:20px; background: rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); backdrop-filter:blur(10px); animation:scoreReveal 0.8s ease-out;}
+@keyframes scoreReveal {0%{opacity:0;transform:translateY(20px) scale(0.9);}100%{opacity:1;transform:translateY(0) scale(1);}}
+.score-label { color:var(--text-secondary); font-size:1rem; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;}
+.score-value { font-size:3rem; font-weight:700; background: linear-gradient(135deg,var(--success-color),#00d4aa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; text-shadow:0 0 30px rgba(0,255,136,0.5);}
+.score-bar { width:100%; height:8px; background: rgba(255,255,255,0.1); border-radius:4px; margin-top:15px; overflow:hidden;}
+.score-fill { height:100%; background:var(--accent-gradient); border-radius:4px; animation:fillBar 2s ease-out; box-shadow:0 0 10px var(--glow-color);}
+@keyframes fillBar {0%{width:0%;}}
+
+/* Responsive */
+@media(max-width:768px){.container{padding:30px 25px; margin:20px;}.title{font-size:2rem;}.particle{display:none;}}
+@media(max-width:480px){.container{padding:25px 20px;}.title{font-size:1.8rem;}.score-value{font-size:2.5rem;}}
+
+</style>
+</head>
+<body>
+
+<div class="neural-background"></div>
+<div class="grid-overlay"></div>
+
+<!-- Particles -->
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+
+<div class="container">
+    <div class="header">
+        <div class="neural-icon">
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+            <div class="neural-node"></div>
+        </div>
+        <h1 class="title">AI Resume Ranker</h1>
+        <p class="subtitle">Neural Analysis • Machine Learning • Future Ready</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="form-container" id="analyzeForm">
+        <div class="input-group">
+            <div class="file-input-wrapper">
+                <input type="file" name="resume" id="resume" class="file-input" required accept=".pdf,.doc,.docx">
+                <label for="resume" class="file-input-label">
+                    Upload Resume
+                    <div style="font-size:0.9rem; margin-top:5px; opacity:0.7;">Drag & drop or click to select</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <textarea name="skills" class="skills-textarea" placeholder="Enter job description or required skills for AI analysis..." required></textarea>
+        </div>
+
+        <button type="submit" class="analyze-btn">🧠 Analyze Resume</button>
+    </form>
+
+    <div class="loading" id="loadingIndicator">
+        <div class="loading-spinner"></div>
+        <p style="color: var(--text-secondary); margin-top:15px;">AI is analyzing your resume...</p>
+    </div>
+
+  {% if score is not none %}
+<div class="score-container">
+    <div class="score-label">Neural Analysis Score</div>
+    <div class="score-value" id="scoreValue">{{ score }}%</div>
+    <div class="score-bar">
+        <div id="scoreFill" class="score-fill"></div>
+    </div>
+</div>
+
+<script>
+    // Dynamically set the width of the score bar
+    const scoreFill = document.getElementById('scoreFill');
+    const scoreValue = document.getElementById('scoreValue');
+    const score = parseFloat("{{ score }}");  // Convert Jinja value to JS number
+    scoreFill.style.width = score + "%";
+</script>
+{% endif %}
+
+</div>
+
+<script>
+// File input interaction
+const fileInput = document.getElementById('resume');
+const fileLabel = document.querySelector('.file-input-label');
+
+fileInput.addEventListener('change', e => {
+    const fileName = e.target.files[0]?.name || 'Upload Resume';
+    fileLabel.innerHTML = `📄 ${fileName}<div style="font-size:0.9rem; margin-top:5px; opacity:0.7;">File selected successfully</div>`;
+});
+
+// Drag & Drop
+['dragenter','dragover','dragleave','drop'].forEach(eventName => fileLabel.addEventListener(eventName, preventDefaults, false));
+function preventDefaults(e){e.preventDefault(); e.stopPropagation();}
+['dragenter','dragover'].forEach(eventName => fileLabel.addEventListener(eventName, () => { fileLabel.style.borderColor='var(--glow-color)'; fileLabel.style.background='rgba(0,242,254,0.2)'; }, false));
+['dragleave','drop'].forEach(eventName => fileLabel.addEventListener(eventName, () => { fileLabel.style.borderColor='rgba(0,242,254,0.5)'; fileLabel.style.background='rgba(0,242,254,0.05)'; }, false));
+fileLabel.addEventListener('drop', e => {
+    const dt = e.dataTransfer; fileInput.files = dt.files;
+    const fileName = dt.files[0]?.name || 'Upload Resume';
+    fileLabel.innerHTML = `📄 ${fileName}<div style="font-size:0.9rem; margin-top:5px; opacity:0.7;">File dropped successfully</div>`;
+});
+
+// Show loading
+document.getElementById('analyzeForm').addEventListener('submit', e => {
+    document.getElementById('loadingIndicator').style.display='block';
+    document.querySelector('.analyze-btn').style.opacity='0.5';
+    document.querySelector('.analyze-btn').style.pointerEvents='none';
+});
+</script>
+
+</body>
+</html>
